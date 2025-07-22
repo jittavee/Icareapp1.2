@@ -1,0 +1,100 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+
+
+
+
+// api/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============== USER & AUTH MODELS ==============
+model User {
+  id              String   @id @default(cuid())
+  username        String   @unique
+  email           String   @unique
+  password        String
+  firstName       String
+  lastName        String
+  phone           String?
+  address         String?
+  profileImageUrl String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  education       String?
+  experience      String?
+  skills          String?
+
+  // Relationships
+  jobPosts        JobPost[]
+  jobApplications JobApplication[]
+  comments        Comment[]
+}
+
+// ============== JOB BOARD MODELS ==============
+enum JobStatus {
+  OPEN
+  CLOSED
+}
+
+model JobCategory {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  jobPosts JobPost[]
+}
+
+model JobPost {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @db.Text
+  imageUrl    String?
+  duration    String?  
+  budget      Decimal? @db.Decimal(10, 2) 
+  location    String?
+  status      JobStatus @default(OPEN)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  author      User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId    String
+  category    JobCategory   @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  categoryId  String
+  applications JobApplication[]
+  comments    Comment[]
+}
+
+model JobApplication {
+  id        String   @id @default(cuid())
+  message   String?
+  createdAt DateTime @default(now())
+
+  jobPost   JobPost @relation(fields: [jobPostId], references: [id], onDelete: Cascade)
+  jobPostId String
+  applicant User    @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  applicantId String
+
+  @@unique([jobPostId, applicantId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId  String
+  jobPost   JobPost  @relation(fields: [jobPostId], references: [id], onDelete: Cascade)
+  jobPostId String
+}
